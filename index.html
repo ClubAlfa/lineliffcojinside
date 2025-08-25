@@ -351,8 +351,8 @@
         <!-- Success Section -->
         <div id="successSection" class="success-message">
             <h2>บันทึกข้อมูลสำเร็จ</h2>
-            <p>ขอบคุณที่ยืนยันการเปลี่ยน Password</p>
-            <button type="button" class="btn btn-primary" onclick="liff.closeWindow()">ปิดหน้าต่าง</button>
+            <p>ขอบคุณที่ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</p>
+            <button type="button" class="btn btn-primary" onclick="closeWindow()">ปิดหน้าต่าง</button>
         </div>
         
         <!-- Confirmed Users List -->
@@ -368,7 +368,7 @@
     </div>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyfsPeIKEXKZcUfPP1eGx7v5JYxoUzjka5PYxLMVO-JQaPHjPbHv4o0eb9Ajyzh-hXj-w/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyakaeTvmEr9TZOCD8cQRv6Cg1DuXr5xa4QjmaP_OtTje1wWMS7SfCw02zoxNI5GFkENA/exec';
         
         let userProfile = null;
         let liffReady = false;
@@ -474,7 +474,7 @@
             }
             
             if (!passwordChanged) {
-                showError('กรุณายืนยันว่าติดตั้งแอปพลิเคชั่น Inside COJ แล้ว');
+                showError('กรุณายืนยันการติดตั้งแอปพลิเคชั่น Inside COJ');
                 return false;
             }
             
@@ -586,10 +586,24 @@
             loadingSection.style.display = 'none';
             successSection.style.display = 'block';
             
-            if (liffReady && typeof liff !== 'undefined') {
-                setTimeout(() => {
-                    liff.closeWindow();
-                }, 5000);
+            // ปิดหน้าต่างอัตโนมัติหลัง 3 วินาที
+            setTimeout(() => {
+                closeWindow();
+            }, 3000);
+        }
+        
+        function closeWindow() {
+            if (liffReady && typeof liff !== 'undefined' && liff.isInClient()) {
+                liff.closeWindow();
+            } else {
+                // ถ้าไม่ได้อยู่ใน LINE
+                if (window.history.length > 1) {
+                    window.history.back(); // กลับไปหน้าก่อนหน้า
+                } else {
+                    window.close(); // พยายามปิดหน้าต่าง
+                }
+                // หรือ redirect ไปหน้าหลัก
+                // window.location.href = '/';
             }
         }
     </script>
