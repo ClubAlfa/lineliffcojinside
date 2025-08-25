@@ -351,7 +351,7 @@
         <!-- Success Section -->
         <div id="successSection" class="success-message">
             <h2>บันทึกข้อมูลสำเร็จ</h2>
-            <p>ขอบคุณที่ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</p>
+            <p>ขอบคุณที่ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ Password</p>
             <button type="button" class="btn btn-primary" onclick="closeWindow()">ปิดหน้าต่าง</button>
         </div>
         
@@ -368,7 +368,7 @@
     </div>
 
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyakaeTvmEr9TZOCD8cQRv6Cg1DuXr5xa4QjmaP_OtTje1wWMS7SfCw02zoxNI5GFkENA/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzECyhks8Azxc5PkzE_-RAUo6qExrNa6eTc8cJ9JrRSpec_hZ9otXfDxKWIVoh4PJxzdA/exec';
         
         let userProfile = null;
         let liffReady = false;
@@ -474,7 +474,7 @@
             }
             
             if (!passwordChanged) {
-                showError('กรุณายืนยันการติดตั้งแอปพลิเคชั่น Inside COJ');
+                showError('กรุณายืนยันว่าได้ดำเนินการติดตั้งแอปพลิเคชั่น Inside COJ แล้ว');
                 return false;
             }
             
@@ -596,14 +596,14 @@
             if (liffReady && typeof liff !== 'undefined' && liff.isInClient()) {
                 liff.closeWindow();
             } else {
-                // ถ้าไม่ได้อยู่ใน LINE
-                if (window.history.length > 1) {
-                    window.history.back(); // กลับไปหน้าก่อนหน้า
-                } else {
-                    window.close(); // พยายามปิดหน้าต่าง
-                }
+                // แสดงข้อความแทนการปิดหน้าต่าง
+                alert('ขอบคุณที่ยืนยัน! สามารถปิดหน้าต่างนี้ได้แล้ว');
+                
                 // หรือ redirect ไปหน้าหลัก
                 // window.location.href = '/';
+                
+                // หรือซ่อนปุ่มปิด
+                document.querySelector('#successSection .btn').style.display = 'none';
             }
         }
     </script>
