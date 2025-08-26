@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ยืนยันการเปลี่ยน Password</title>
+    <title>ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -315,7 +315,7 @@
         <!-- Form Section -->
         <div id="formSection">
             <div class="header">
-                <h1>🌸 ยืนยันการเปลี่ยน Password</h1>
+                <h1>ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</h1>
                 <p>กรุณากรอกข้อมูลเพื่อยืนยันการดำเนินการ</p>
             </div>
             
@@ -330,7 +330,7 @@
                         <div class="checkbox-group">
                             <div class="checkbox-item">
                                 <input type="checkbox" id="passwordChanged" required>
-                                <label for="passwordChanged">ได้ดำเนินการเปลี่ยน Password แล้ว</label>
+                                <label for="passwordChanged">ได้ดำเนินการติดตั้งแอปพลิเคชั่น Inside COJ แล้ว</label>
                             </div>
                         </div>
                     </div>
@@ -351,7 +351,7 @@
         <!-- Success Section -->
         <div id="successSection" class="success-message">
             <h2>บันทึกข้อมูลสำเร็จ</h2>
-            <p>ขอบคุณที่ยืนยันการเปลี่ยน Password</p>
+            <p>ขอบคุณที่ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</p>
             <p style="font-size: 13px; color: #be185d;">หน้าต่างจะปิดอัตโนมัติใน <span id="countdown">3</span> วินาที</p>
         </div>
         
@@ -486,7 +486,7 @@
             }
             
             if (!passwordChanged) {
-                showError('กรุณายืนยันว่าได้ดำเนินการเปลี่ยน Password แล้ว');
+                showError('กรุณายืนยันว่าได้ดำเนินการติดตั้งแอปพลิเคชั่น Inside COJ แล้ว');
                 return false;
             }
             
@@ -560,17 +560,61 @@
         }
         
         function getTimeAgo(timestamp) {
-            const now = new Date();
-            const time = new Date(timestamp);
-            const diffMs = now - time;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            
-            if (diffMins < 1) return 'เมื่อสักครู่';
-            if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
-            if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`;
-            return `${diffDays} วันที่แล้ว`;
+            try {
+                let time;
+                
+                // พยายาม parse timestamp แบบต่างๆ
+                if (timestamp instanceof Date) {
+                    time = timestamp;
+                } else if (typeof timestamp === 'string') {
+                    // ถ้าเป็น string ของ Thai locale
+                    if (timestamp.includes('/') && timestamp.includes(' ')) {
+                        // รูปแบบ: "26/8/2568 14:30:45"
+                        const parts = timestamp.split(' ');
+                        const dateParts = parts[0].split('/');
+                        const timeParts = parts[1] ? parts[1].split(':') : ['0', '0', '0'];
+                        
+                        // แปลงปี พ.ศ. เป็น ค.ศ.
+                        let year = parseInt(dateParts[2]);
+                        if (year > 2500) year -= 543;
+                        
+                        time = new Date(year, parseInt(dateParts[1]) - 1, parseInt(dateParts[0]), 
+                                      parseInt(timeParts[0]), parseInt(timeParts[1]), parseInt(timeParts[2] || 0));
+                    } else {
+                        time = new Date(timestamp);
+                    }
+                } else {
+                    time = new Date(timestamp);
+                }
+                
+                // ตรวจสอบว่า Date object ถูกต้อง
+                if (isNaN(time.getTime())) {
+                    // ถ้า parse ไม่ได้ ให้แสดงแค่วันที่ปัจจุบัน
+                    return 'เมื่อสักครู่';
+                }
+                
+                const now = new Date();
+                const diffMs = now - time;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) return 'เมื่อสักครู่';
+                if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`;
+                if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`;
+                if (diffDays < 7) return `${diffDays} วันที่แล้ว`;
+                
+                // ถ้าเกิน 7 วัน แสดงเป็นวันที่แบบย่อ
+                return time.toLocaleDateString('th-TH', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: '2-digit'
+                });
+                
+            } catch (error) {
+                console.log('Error parsing timestamp:', timestamp, error);
+                return 'เมื่อสักครู่';
+            }
         }
         
         function submitForm() {
@@ -667,8 +711,8 @@
             // ซ่อนฟอร์มและรายการผู้ใช้
             document.getElementById('confirmedUsers').style.display = 'none';
             
-            // Countdown timer แสดงใน UI
-            let countdown = 5;
+            // Countdown timer 3 วินาที
+            let countdown = 3;
             const countdownElement = document.getElementById('countdown');
             
             const timer = setInterval(() => {
@@ -679,12 +723,18 @@
                 
                 if (countdown <= 0) {
                     clearInterval(timer);
-                    // แสดงข้อความเสร็จสิ้น
-                    successSection.innerHTML = `
-                        <h2>✅ เสร็จสิ้น!</h2>
-                        <p>ขอบคุณที่ยืนยันการเปลี่ยน Password</p>
-                        <p style="font-size: 14px; color: #be185d;">สามารถปิดหน้าต่างนี้ได้แล้ว</p>
-                    `;
+                    
+                    // ปิดหน้าต่าง
+                    if (liffReady && typeof liff !== 'undefined' && liff.isInClient()) {
+                        liff.closeWindow();
+                    } else {
+                        // สำหรับ browser ปกติ
+                        window.close();
+                        // ถ้าปิดไม่ได้ให้ redirect กลับ
+                        setTimeout(() => {
+                            window.history.back();
+                        }, 500);
+                    }
                 }
             }, 1000);
         }
