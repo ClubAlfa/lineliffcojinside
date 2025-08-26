@@ -320,41 +320,25 @@
             </div>
             
             <div class="content">
-                <!-- Embedded Google Form -->
-                <iframe 
-                    src="https://docs.google.com/forms/d/e/YOUR_FORM_ID/viewform?embedded=true" 
-                    width="100%" 
-                    height="600" 
-                    frameborder="0" 
-                    marginheight="0" 
-                    marginwidth="0"
-                    style="border-radius: 8px;">
-                    Loading…
-                </iframe>
-                
-                <!-- หรือใช้ Custom Form ที่ส่งไปที่ Formspree -->
-                <!-- 
-                <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" id="passwordForm" style="display: none;">
+                <form id="passwordForm">
                     <div class="form-group">
                         <label for="userName">ชื่อ-นามสกุล</label>
-                        <input type="text" id="userName" name="userName" required placeholder="กรุณากรอกชื่อ-นามสกุล">
+                        <input type="text" id="userName" required placeholder="กรุณากรอกชื่อ-นามสกุล">
                     </div>
                     
                     <div class="form-group">
                         <div class="checkbox-group">
                             <div class="checkbox-item">
-                                <input type="checkbox" id="passwordChanged" name="passwordChanged" required>
+                                <input type="checkbox" id="passwordChanged" required>
                                 <label for="passwordChanged">ได้ดำเนินการเปลี่ยน Password แล้ว</label>
                             </div>
                         </div>
                     </div>
                     
-                    <input type="hidden" name="_subject" value="Password Change Confirmation">
-                    <input type="hidden" name="_next" value="https://your-domain.github.io/thank-you.html">
+                    <div class="error-message" id="errorMessage"></div>
                     
-                    <button type="submit" class="btn btn-primary">ยืนยันและส่งข้อมูล</button>
+                    <button type="button" class="btn btn-primary" id="submitBtn">ยืนยันและส่งข้อมูล</button>
                 </form>
-                -->
             </div>
         </div>
         
@@ -385,8 +369,9 @@
 
     <script>
         // *** ใส่ Google Apps Script URL ที่ deploy แล้ว ***
-        // แทนที่ด้วย Web app URL ที่ถูกต้องจาก Google Apps Script
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbwNXysFK7fe-uJtT7TW2gDQvRW_CQPE30l2JMwQOXBXf5dzmobV4vx2f-F3ShmP797x/exec';
+        // ใส่ Web App URL จริงที่ได้จาก Google Apps Script
+        // รูปแบบ: https://script.google.com/macros/s/[DEPLOYMENT_ID]/exec  
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzKE2k2pIm1m8K8H37ip5dBJcm4I92WFcWOlLKrnQ9IvMg621iBqU4GPqgsrmXOBMf1/exec';
         
         let userProfile = null;
         let liffReady = false;
@@ -596,62 +581,83 @@
                 return;
             }
             
-            log('Submitting form via hidden iframe...');
+            log('Submitting form with proper POST data...');
             
             formSection.style.display = 'none';
             loadingSection.style.display = 'block';
             
             const userName = document.getElementById('userName').value.trim();
             
-            // สร้าง hidden form และ iframe เพื่อหลีกเลี่ยง CORS
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.name = 'hiddenFrame';
-            document.body.appendChild(iframe);
+            // สร้าง FormData แบบที่ Google Apps Script เข้าใจ
+            const formData = new URLSearchParams();
+            formData.append('timestamp', new Date().toLocaleString('th-TH'));
+            formData.append('lineUserId', userProfile.userId);
+            formData.append('lineDisplayName', userProfile.displayName);
+            formData.append('userName', userName);
+            formData.append('passwordChanged', 'true');
             
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = GAS_URL;
-            form.target = 'hiddenFrame';
-            
-            // เพิ่ม input fields
-            const fields = {
+            log('Sending data:', {
                 userName: userName,
-                passwordChanged: 'true',
-                lineUserId: userProfile.userId,
-                lineDisplayName: userProfile.displayName,
-                timestamp: new Date().toISOString()
-            };
-            
-            Object.keys(fields).forEach(key => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = fields[key];
-                form.appendChild(input);
+                userId: userProfile.userId,
+                timestamp: new Date().toLocaleString('th-TH')
             });
             
-            document.body.appendChild(form);
-            
-            // Submit form
-            form.submit();
-            
-            // Clean up และแสดงผลสำเร็จหลัง 2 วินาที
-            setTimeout(() => {
-                document.body.removeChild(form);
-                document.body.removeChild(iframe);
-                
-                // เพิ่มข้อมูลใน UI
-                const newUser = {
-                    userName: userName,
-                    timestamp: new Date().toISOString()
-                };
-                confirmedUsers.unshift(newUser);
-                updateUserList();
-                
-                showSuccess();
-                log('Form submitted successfully');
-            }, 2000);
+            fetch(GAS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: formData.toString()
+            })
+            .then(response => {
+                log('Response status:', response.status);
+                return response.text();
+            })
+            .then(text => {
+                log('Response text:', text);
+                try {
+                    const result = JSON.parse(text);
+                    if (result.success) {
+                        log('Submit successful');
+                        
+                        // เพิ่มข้อมูลใน UI
+                        const newUser = {
+                            userName: userName,
+                            timestamp: new Date().toISOString()
+                        };
+                        confirmedUsers.unshift(newUser);
+                        updateUserList();
+                        
+                        // บันทึกไว้ใน localStorage
+                        localStorage.setItem('confirmedUsers', JSON.stringify(confirmedUsers.slice(0, 50)));
+                        
+                        showSuccess();
+                    } else {
+                        throw new Error(result.error || 'เกิดข้อผิดพลาดในการส่งข้อมูล');
+                    }
+                } catch (parseError) {
+                    log('JSON parse error, but might be successful:', parseError);
+                    // อาจจะ response ไม่ใช่ JSON แต่การส่งข้อมูลสำเร็จ
+                    if (text.includes('success') || text.includes('บันทึก') || text.length > 10) {
+                        const newUser = {
+                            userName: userName,
+                            timestamp: new Date().toISOString()
+                        };
+                        confirmedUsers.unshift(newUser);
+                        updateUserList();
+                        localStorage.setItem('confirmedUsers', JSON.stringify(confirmedUsers.slice(0, 50)));
+                        showSuccess();
+                    } else {
+                        throw new Error('ไม่สามารถประมวลผลได้: ' + parseError.message);
+                    }
+                }
+            })
+            .catch(error => {
+                log('Submit error:', error);
+                loadingSection.style.display = 'none';
+                formSection.style.display = 'block';
+                showError('เกิดข้อผิดพลาด: ' + error.message);
+            });
         }
         
         function showSuccess() {
