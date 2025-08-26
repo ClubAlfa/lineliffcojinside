@@ -320,25 +320,41 @@
             </div>
             
             <div class="content">
-                <form id="passwordForm">
+                <!-- Embedded Google Form -->
+                <iframe 
+                    src="https://docs.google.com/forms/d/e/YOUR_FORM_ID/viewform?embedded=true" 
+                    width="100%" 
+                    height="600" 
+                    frameborder="0" 
+                    marginheight="0" 
+                    marginwidth="0"
+                    style="border-radius: 8px;">
+                    Loading…
+                </iframe>
+                
+                <!-- หรือใช้ Custom Form ที่ส่งไปที่ Formspree -->
+                <!-- 
+                <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" id="passwordForm" style="display: none;">
                     <div class="form-group">
                         <label for="userName">ชื่อ-นามสกุล</label>
-                        <input type="text" id="userName" required placeholder="กรุณากรอกชื่อ-นามสกุล">
+                        <input type="text" id="userName" name="userName" required placeholder="กรุณากรอกชื่อ-นามสกุล">
                     </div>
                     
                     <div class="form-group">
                         <div class="checkbox-group">
                             <div class="checkbox-item">
-                                <input type="checkbox" id="passwordChanged" required>
+                                <input type="checkbox" id="passwordChanged" name="passwordChanged" required>
                                 <label for="passwordChanged">ได้ดำเนินการเปลี่ยน Password แล้ว</label>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="error-message" id="errorMessage"></div>
+                    <input type="hidden" name="_subject" value="Password Change Confirmation">
+                    <input type="hidden" name="_next" value="https://your-domain.github.io/thank-you.html">
                     
-                    <button type="button" class="btn btn-primary" id="submitBtn">ยืนยันและส่งข้อมูล</button>
+                    <button type="submit" class="btn btn-primary">ยืนยันและส่งข้อมูล</button>
                 </form>
+                -->
             </div>
         </div>
         
@@ -368,8 +384,8 @@
     </div>
 
     <script>
-        // *** Configuration - ใส่ URL ที่ถูกต้อง ***
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxo9rloEIFBrINe0LIrnJnQ-sH4cVni4mkaRhu53xlM8yOJ2YFIkPLVR_oMPwnTmkUTKQ/exec';
+        // *** ใส่ Google Apps Script URL ที่ deploy แล้ว ***
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbw70L2MixfcEp85P1fgRqdlLbtiRcBVxsBcIaB2am7TVjMSV75RQ2UR26uutawO-bIX/exec';
         
         let userProfile = null;
         let liffReady = false;
@@ -493,47 +509,43 @@
         }
         
         function loadConfirmedUsers() {
-            log('Loading confirmed users...');
+            log('Loading confirmed users from Google Sheets...');
             
+            // เพื่อดึงข้อมูลจาก Google Sheets เราต้องเพิ่มฟังก์ชัน doGet ใน Google Apps Script
             const url = GAS_URL + '?action=getUsers&t=' + Date.now();
             
-            // ใช้ JSONP แทน fetch เพื่อหลีกเลี่ยง CORS
-            const script = document.createElement('script');
-            const callbackName = 'jsonp_callback_' + Date.now();
-            
-            // สร้าง callback function
-            window[callbackName] = function(data) {
-                log('JSONP response:', data);
-                if (data && data.users) {
-                    confirmedUsers = data.users;
-                    updateUserList();
-                    log('Users loaded successfully:', confirmedUsers.length);
-                } else {
-                    confirmedUsers = [];
+            fetch(url, {
+                method: 'GET'
+            })
+            .then(response => response.text())
+            .then(text => {
+                log('Get users response:', text);
+                try {
+                    const result = JSON.parse(text);
+                    if (result.users) {
+                        confirmedUsers = result.users;
+                        updateUserList();
+                        log('Users loaded successfully:', confirmedUsers.length);
+                    } else {
+                        // ถ้าไม่มีข้อมูลใน response ให้ใช้ข้อมูลจาก localStorage
+                        const savedUsers = JSON.parse(localStorage.getItem('confirmedUsers') || '[]');
+                        confirmedUsers = savedUsers;
+                        updateUserList();
+                        log('Using saved users:', confirmedUsers.length);
+                    }
+                } catch (parseError) {
+                    log('Parse error for getUsers:', parseError);
+                    // ใช้ข้อมูลจาก localStorage หรือข้อมูลเปล่า
+                    const savedUsers = JSON.parse(localStorage.getItem('confirmedUsers') || '[]');
+                    confirmedUsers = savedUsers;
                     updateUserList();
                 }
-                // ลบ script และ callback
-                document.head.removeChild(script);
-                delete window[callbackName];
-            };
-            
-            // เนื่องจาก Google Apps Script ไม่รองรับ JSONP 
-            // เราจึงใช้วิธี fetch แบบ no-cors แล้วจำลองข้อมูล
-            fetch(url, {
-                method: 'GET',
-                mode: 'no-cors'
-            })
-            .then(() => {
-                // เนื่องจาก no-cors จะไม่ได้ response
-                // เราจึงใช้ข้อมูลจำลองหรือ localStorage
-                const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-                confirmedUsers = mockUsers;
-                updateUserList();
-                log('Using mock/cached data:', confirmedUsers.length);
             })
             .catch(error => {
                 log('Error loading users:', error);
-                confirmedUsers = [];
+                // ใช้ข้อมูลจาก localStorage
+                const savedUsers = JSON.parse(localStorage.getItem('confirmedUsers') || '[]');
+                confirmedUsers = savedUsers;
                 updateUserList();
             });
         }
@@ -583,63 +595,62 @@
                 return;
             }
             
-            log('Submitting form...');
+            log('Submitting form via hidden iframe...');
             
             formSection.style.display = 'none';
             loadingSection.style.display = 'block';
             
             const userName = document.getElementById('userName').value.trim();
             
-            // สร้าง URL สำหรับ GET request (หลีกเลี่ยง CORS)
-            const params = new URLSearchParams({
+            // สร้าง hidden form และ iframe เพื่อหลีกเลี่ยง CORS
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.name = 'hiddenFrame';
+            document.body.appendChild(iframe);
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = GAS_URL;
+            form.target = 'hiddenFrame';
+            
+            // เพิ่ม input fields
+            const fields = {
                 userName: userName,
                 passwordChanged: 'true',
                 lineUserId: userProfile.userId,
                 lineDisplayName: userProfile.displayName,
-                timestamp: new Date().toISOString(),
-                action: 'submit'
+                timestamp: new Date().toISOString()
+            };
+            
+            Object.keys(fields).forEach(key => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = fields[key];
+                form.appendChild(input);
             });
             
-            const submitUrl = GAS_URL + '?' + params.toString();
+            document.body.appendChild(form);
             
-            log('Submit URL:', submitUrl);
+            // Submit form
+            form.submit();
             
-            // ใช้ no-cors mode
-            fetch(submitUrl, {
-                method: 'GET',
-                mode: 'no-cors'
-            })
-            .then(() => {
-                log('Submit completed (no-cors mode)');
+            // Clean up และแสดงผลสำเร็จหลัง 2 วินาที
+            setTimeout(() => {
+                document.body.removeChild(form);
+                document.body.removeChild(iframe);
                 
-                // เพิ่มข้อมูลใน localStorage และ UI
-                const newUser = {
-                    userName: userName,
-                    timestamp: new Date().toISOString()
-                };
-                
-                // อัพเดท localStorage
-                const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]');
-                mockUsers.unshift(newUser);
-                localStorage.setItem('mockUsers', JSON.stringify(mockUsers.slice(0, 50)));
-                
-                // อัพเดท UI
-                confirmedUsers.unshift(newUser);
-                updateUserList();
-                
-                showSuccess();
-            })
-            .catch(error => {
-                log('Submit error:', error);
-                // ถึงแม้จะ error แต่ข้อมูลอาจส่งไปแล้ว (CORS limitation)
+                // เพิ่มข้อมูลใน UI
                 const newUser = {
                     userName: userName,
                     timestamp: new Date().toISOString()
                 };
                 confirmedUsers.unshift(newUser);
                 updateUserList();
+                
                 showSuccess();
-            });
+                log('Form submitted successfully');
+            }, 2000);
         }
         
         function showSuccess() {
