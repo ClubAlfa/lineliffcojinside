@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</title>
+    <title>ยืนยันการเปลี่ยน Password</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -315,7 +315,7 @@
         <!-- Form Section -->
         <div id="formSection">
             <div class="header">
-                <h1>ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</h1>
+                <h1>🌸 ยืนยันการเปลี่ยน Password</h1>
                 <p>กรุณากรอกข้อมูลเพื่อยืนยันการดำเนินการ</p>
             </div>
             
@@ -330,7 +330,7 @@
                         <div class="checkbox-group">
                             <div class="checkbox-item">
                                 <input type="checkbox" id="passwordChanged" required>
-                                <label for="passwordChanged">ได้ดำเนินการติดตั้งแอปพลิเคชั่น Inside COJ แล้ว</label>
+                                <label for="passwordChanged">ได้ดำเนินการเปลี่ยน Password แล้ว</label>
                             </div>
                         </div>
                     </div>
@@ -351,7 +351,7 @@
         <!-- Success Section -->
         <div id="successSection" class="success-message">
             <h2>บันทึกข้อมูลสำเร็จ</h2>
-            <p>ขอบคุณที่ยืนยันการติดตั้งแอปพลิเคชั่น Inside COJ</p>
+            <p>ขอบคุณที่ยืนยันการเปลี่ยน Password</p>
             <p style="font-size: 13px; color: #be185d;">หน้าต่างจะปิดอัตโนมัติใน <span id="countdown">3</span> วินาที</p>
         </div>
         
@@ -371,7 +371,7 @@
         // *** ใส่ Google Apps Script URL ที่ deploy แล้ว ***
         // ใส่ Web App URL จริงที่ได้จาก Google Apps Script
         // รูปแบบ: https://script.google.com/macros/s/[DEPLOYMENT_ID]/exec  
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxgo72B7HXVnu7dwaUuw8EoOeaYB2vyqyRVJXgQY0znZLgAhlW6EUacRXvQf7ikal4UGw/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbx-Zz5dTPPpkQE62mFt_QVtzQ-V0YBe_1Wq4d8LyppzgM3sWiO8EVs3HKMiR3R8NOqDYg/exec';
         
         let userProfile = null;
         let liffReady = false;
@@ -486,7 +486,7 @@
             }
             
             if (!passwordChanged) {
-                showError('กรุณายืนยันว่าได้ดำเนินการติดตั้งแอปพลิเคชั่น Inside COJ แล้ว');
+                showError('กรุณายืนยันว่าได้ดำเนินการเปลี่ยน Password แล้ว');
                 return false;
             }
             
@@ -633,7 +633,7 @@
             const userName = document.getElementById('userName').value.trim();
             
             // สร้าง FormData แบบที่ Google Apps Script เข้าใจ
-            const formData = new URLSearchParams();
+            const formData = new FormData();
             formData.append('timestamp', new Date().toLocaleString('th-TH'));
             formData.append('lineUserId', userProfile.userId);
             formData.append('lineDisplayName', userProfile.displayName);
@@ -648,10 +648,7 @@
             
             fetch(GAS_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: formData.toString()
+                body: formData
             })
             .then(response => {
                 log('Response status:', response.status);
